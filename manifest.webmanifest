@@ -1,0 +1,12 @@
+{
+  "name": "Neon Blok",
+  "short_name": "Neon Blok",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#171642",
+  "theme_color": "#1B2160",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

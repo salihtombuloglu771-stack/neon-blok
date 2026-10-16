@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Neon Blok</title>
+  <meta name="description" content="Neon Blok — blokları 10x10 tahtaya yerleştir, satır ve sütunları temizle.">
+  <meta name="theme-color" content="#1B2160">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Neon Blok">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #171642;
+      overscroll-behavior: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: #fff;
+    }
+    /* Telefonda tüm ekran; bilgisayarda dikey bir "telefon" alanı ortada */
+    #game {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: calc(100vh * 0.75);
+      max-width: calc(100dvh * 0.75);
+      background: linear-gradient(#1B2160, #171642 50%, #2A0F45);
+    }
+    #unity-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      outline: none;
+    }
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      background: linear-gradient(#1B2160, #171642 50%, #2A0F45);
+      transition: opacity 0.4s;
+    }
+    #logo {
+      display: grid;
+      grid-template-columns: repeat(2, 44px);
+      gap: 8px;
+      filter: drop-shadow(0 0 24px rgba(107, 77, 255, 0.7));
+      animation: float 2.4s ease-in-out infinite;
+    }
+    #logo span { width: 44px; height: 44px; border-radius: 10px; }
+    #logo span:nth-child(1) { background: #3D8BFF; }
+    #logo span:nth-child(2) { background: #FF4FA3; }
+    #logo span:nth-child(3) { background: #FF9A3D; }
+    #logo span:nth-child(4) { background: #2EE6C9; }
+    #title {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-shadow: 0 0 18px rgba(138, 107, 255, 0.9);
+    }
+    #bar {
+      width: 220px;
+      height: 10px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+    #fill {
+      width: 0%;
+      height: 100%;
+      border-radius: 5px;
+      background: linear-gradient(90deg, #3D8BFF, #FF4FA3);
+      transition: width 0.2s;
+    }
+    #status { font-size: 14px; color: #A9AEE8; min-height: 18px; text-align: center; padding: 0 24px; }
+    @keyframes float { 50% { transform: translateY(-8px) rotate(3deg); } }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="loading">
+      <div id="logo"><span></span><span></span><span></span><span></span></div>
+      <div id="title">NEON BLOK</div>
+      <div id="bar"><div id="fill"></div></div>
+      <div id="status">Yükleniyor…</div>
+    </div>
+  </div>
+  <script>
+    // Çift dokunma ve iki parmakla yakınlaştırmayı engelle (iOS Safari user-scalable'ı yok sayabiliyor).
+    document.addEventListener("gesturestart", function (e) { e.preventDefault(); }, { passive: false });
+    document.addEventListener("dblclick", function (e) { e.preventDefault(); }, { passive: false });
+    document.addEventListener("touchmove", function (e) { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+
+    var buildUrl = "Build";
+    var config = {
+      dataUrl: buildUrl + "/WebGL.data.unityweb",
+      frameworkUrl: buildUrl + "/WebGL.framework.js.unityweb",
+      codeUrl: buildUrl + "/WebGL.wasm.unityweb",
+      streamingAssetsUrl: "StreamingAssets",
+      autoSyncPersistentDataPath: true,
+      companyName: "Neon Blok",
+      productName: "Neon Blok",
+      productVersion: "1.0.0",
+      // Keskin görüntü ama telefonu yormasın: en fazla 2x çözünürlük.
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+    };
+
+    var canvas = document.querySelector("#unity-canvas");
+    var loading = document.querySelector("#loading");
+    var fill = document.querySelector("#fill");
+    var status = document.querySelector("#status");
+
+    var script = document.createElement("script");
+    script.src = buildUrl + "/WebGL.loader.js";
+    script.onload = function () {
+      createUnityInstance(canvas, config, function (progress) {
+        fill.style.width = Math.round(progress * 100) + "%";
+      }).then(function () {
+        loading.style.opacity = "0";
+        setTimeout(function () { loading.style.display = "none"; }, 450);
+      }).catch(function (message) {
+        status.textContent = "Oyun açılamadı: " + message;
+      });
+    };
+    script.onerror = function () { status.textContent = "Oyun dosyaları yüklenemedi. Sayfayı yenileyin."; };
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>
